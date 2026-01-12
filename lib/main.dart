@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'firebase_options.dart';
 import 'models/models.dart';
 import 'pages/home_page.dart';
 import 'pages/details_page.dart';
@@ -12,7 +13,16 @@ import 'widgets/image_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('تم تهيئة Firebase بنجاح');
+  } catch (e) {
+    debugPrint('فشل تهيئة Firebase: $e');
+  }
+  
   runApp(const MartyrSystemApp());
 }
 

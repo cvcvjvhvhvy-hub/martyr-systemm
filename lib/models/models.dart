@@ -53,17 +53,17 @@ class Martyr {
 
   factory Martyr.fromMap(Map<String, dynamic> map) {
     return Martyr(
-      id: map['id'],
-      name: map['name'],
-      title: map['title'],
-      birthDate: map['birthDate'],
-      martyrdomDate: map['martyrdomDate'],
-      cause: map['cause'],
-      rank: map['rank'],
-      job: map['job'],
-      battles: map['battles'].toString().split(','),
-      bio: map['bio'],
-      imageUrl: map['imageUrl'],
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      title: map['title'] ?? '',
+      birthDate: map['birthDate'] ?? '',
+      martyrdomDate: map['martyrdomDate'] ?? '',
+      cause: map['cause'] ?? '',
+      rank: map['rank'] ?? '',
+      job: map['job'] ?? '',
+      battles: (map['battles'] ?? '').toString().split(',').where((s) => s.isNotEmpty).toList(),
+      bio: map['bio'] ?? '',
+      imageUrl: map['imageUrl'] ?? '',
     );
   }
 }
@@ -92,10 +92,10 @@ class Stance {
 
   factory Stance.fromMap(Map<String, dynamic> map) {
     return Stance(
-      id: map['id'],
-      title: map['title'],
-      subtitle: map['subtitle'],
-      imageUrl: map['imageUrl'],
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      subtitle: map['subtitle'] ?? '',
+      imageUrl: map['imageUrl'] ?? '',
     );
   }
 }

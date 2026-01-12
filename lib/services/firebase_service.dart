@@ -50,11 +50,24 @@ class FirebaseService {
   // Upload Image
   static Future<String> uploadImage(String base64Image, String path) async {
     try {
-      final bytes = base64Decode(base64Image.split(',').last);
+      if (!base64Image.startsWith('data:image')) {
+        return base64Image; // Already a URL
+      }
+      
+      final base64String = base64Image.contains(',') ? base64Image.split(',').last : base64Image;
+      final bytes = base64Decode(base64String);
+      
+      if (bytes.isEmpty) {
+        throw Exception('صورة فارغة');
+      }
+      
       final ref = _storage.ref().child('images/$path/${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await ref.putData(bytes);
-      return await ref.getDownloadURL();
+      final uploadTask = ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+      
+      final snapshot = await uploadTask;
+      return await snapshot.ref.getDownloadURL();
     } catch (e) {
+      debugPrint('فشل رفع الصورة: $e');
       return base64Image; // fallback to base64
     }
   }
@@ -63,8 +76,13 @@ class FirebaseService {
   static Future<List<Martyr>> getMartyrs() async {
     try {
       final snapshot = await _firestore.collection('martyrs').orderBy('id', descending: true).get();
-      return snapshot.docs.map((doc) => Martyr.fromMap({...doc.data(), 'id': doc.id})).toList();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Martyr.fromMap(data);
+      }).toList();
     } catch (e) {
+      debugPrint('فشل تحميل الشهداء: $e');
       return [];
     }
   }
@@ -78,10 +96,13 @@ class FirebaseService {
       
       final martyrData = martyr.toMap();
       martyrData['imageUrl'] = imageUrl;
+      martyrData['createdAt'] = FieldValue.serverTimestamp();
       
       await _firestore.collection('martyrs').doc(martyr.id).set(martyrData);
+      debugPrint('تم إضافة الشهيد بنجاح: ${martyr.name}');
     } catch (e) {
-      throw Exception('فشل في إضافة الشهيد');
+      debugPrint('فشل في إضافة الشهيد: $e');
+      throw Exception('فشل في إضافة الشهيد: ${e.toString()}');
     }
   }
 
@@ -113,8 +134,13 @@ class FirebaseService {
   static Future<List<Stance>> getStances() async {
     try {
       final snapshot = await _firestore.collection('stances').orderBy('id', descending: true).get();
-      return snapshot.docs.map((doc) => Stance.fromMap({...doc.data(), 'id': doc.id})).toList();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Stance.fromMap(data);
+      }).toList();
     } catch (e) {
+      debugPrint('فشل تحميل المواقف: $e');
       return [];
     }
   }
@@ -163,8 +189,13 @@ class FirebaseService {
   static Future<List<Stance>> getCrimes() async {
     try {
       final snapshot = await _firestore.collection('crimes').orderBy('id', descending: true).get();
-      return snapshot.docs.map((doc) => Stance.fromMap({...doc.data(), 'id': doc.id})).toList();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Stance.fromMap(data);
+      }).toList();
     } catch (e) {
+      debugPrint('فشل تحميل الجرائم: $e');
       return [];
     }
   }
