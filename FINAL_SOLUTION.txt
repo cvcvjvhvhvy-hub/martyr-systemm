@@ -1,0 +1,15 @@
+لا يمكنني الرفع بسبب مشكلة الاتصال.
+
+الحل الوحيد:
+
+1. اضغط Win+R
+2. اكتب: explorer "c:\Users\Hamid\Desktop\نظام-الشهداء-(martyr-system) (4)\flutter_app"
+3. حدد جميع الملفات (Ctrl+A)
+4. انسخها (Ctrl+C)
+5. اذهب إلى: github.com/sbshsvvswhhh-crypto/martyr-system
+6. اضغط "Add file" → "Upload files"
+7. الصق الملفات (Ctrl+V)
+8. اكتب: "Initial commit"
+9. اضغط "Commit changes"
+
+المشروع جاهز - فقط يحتاج رفع يدوي.

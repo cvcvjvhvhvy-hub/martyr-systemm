@@ -1,0 +1,16 @@
+تم إعداد Git بنجاح! ✅
+
+الخطوات التالية:
+
+1. اذهب إلى: https://github.com/sbshsvvswhhh-crypto
+2. اضغط "New Repository"
+3. اسم الـ Repository: martyr-system
+4. اضغط "Create Repository"
+
+بعد إنشاء الـ Repository، شغل هذا الأمر:
+git push -u origin main
+
+أو استخدم GitHub Desktop أو VS Code لرفع المشروع.
+
+رابط المشروع بعد الرفع:
+https://github.com/sbshsvvswhhh-crypto/martyr-system
