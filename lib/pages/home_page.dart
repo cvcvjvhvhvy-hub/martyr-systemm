@@ -264,7 +264,7 @@ class HomePage extends StatelessWidget {
             const SizedBox(height: 40),
 
             // Lists
-            _buildSection('الشهداء', martyrs.skip(1).toList(), onSelectMartyr),
+            _buildSection('الشهداء', martyrs.skip(1).toList(), (martyr) => onSelectMartyr(martyr as Martyr)),
             const SizedBox(height: 48),
             _buildSection('جرائم لا تُنسى', crimes, null),
             const SizedBox(height: 48),

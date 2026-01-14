@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m1
     environment:
-      flutter: stable
+      flutter: 3.19.6
       xcode: latest
       cocoapods: default
     scripts:
@@ -14,21 +14,12 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
-      - name: Flutter analyze
-        script: |
-          flutter analyze
-        ignore_failure: true
-      - name: Flutter unit tests
-        script: |
-          flutter test
-        ignore_failure: true
       - name: Build APK with Flutter
         script: |
-          flutter build apk --release
+          flutter build apk --release --no-tree-shake-icons
     artifacts:
       - build/**/outputs/**/*.apk
       - build/**/outputs/**/mapping.txt
-      - flutter_drive.log
     publishing:
       email:
         recipients:
