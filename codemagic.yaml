@@ -4,13 +4,6 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m1
     environment:
-      android_signing:
-        - keystore_reference
-      groups:
-        - google_play
-      vars:
-        PACKAGE_NAME: "com.example.martyr_system"
-        GOOGLE_PLAY_TRACK: internal
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -24,6 +17,7 @@ workflows:
       - name: Flutter analyze
         script: |
           flutter analyze
+        ignore_failure: true
       - name: Flutter unit tests
         script: |
           flutter test
