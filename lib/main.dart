@@ -13,7 +13,7 @@ import 'widgets/image_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -22,7 +22,7 @@ void main() async {
   } catch (e) {
     debugPrint('فشل تهيئة Firebase: $e');
   }
-  
+
   runApp(const MartyrSystemApp());
 }
 
@@ -99,7 +99,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
 class MainScreen extends StatefulWidget {
   final VoidCallback onLogout;
-  
+
   const MainScreen({Key? key, required this.onLogout}) : super(key: key);
 
   @override
@@ -238,14 +238,7 @@ class _MainScreenState extends State<MainScreen> {
       case ViewType.stances:
       case ViewType.crimes:
         return _buildStancesCrimesList();
-      default:
-        return HomePage(
-          martyrs: martyrs,
-          stances: stances,
-          crimes: crimes,
-          onSelectMartyr: _navigateToDetails,
-        );
-    }
+      }
   }
 
   Widget _buildMartyrsList() {
@@ -259,7 +252,8 @@ class _MainScreenState extends State<MainScreen> {
             Container(
               padding: const EdgeInsets.only(right: 12),
               decoration: const BoxDecoration(
-                border: Border(right: BorderSide(color: Color(0xFF14B8A6), width: 4)),
+                border: Border(
+                    right: BorderSide(color: Color(0xFF14B8A6), width: 4)),
               ),
               child: const Text(
                 'سجل الشهداء الخالدين',
@@ -273,85 +267,91 @@ class _MainScreenState extends State<MainScreen> {
             const SizedBox(height: 24),
             martyrs.isNotEmpty
                 ? Column(
-                    children: martyrs.map((martyr) => Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: GestureDetector(
-                        onTap: () => _navigateToDetails(martyr),
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Row(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: ImageHelper.buildImage(
-                                  martyr.imageUrl,
-                                  width: 96,
-                                  height: 96,
-                                  fit: BoxFit.cover,
-                                  errorWidget: Container(
-                                    width: 96,
-                                    height: 96,
-                                    color: const Color(0xFFF1F5F9),
-                                    child: const Icon(Icons.person, color: Color(0xFF94A3B8)),
+                    children: martyrs
+                        .map((martyr) => Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              child: GestureDetector(
+                                onTap: () => _navigateToDetails(martyr),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                    border: Border.all(
+                                        color: const Color(0xFFE2E8F0)),
                                   ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        martyr.name,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w900,
-                                          color: Color(0xFF1E293B),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: ImageHelper.buildImage(
+                                          martyr.imageUrl,
+                                          width: 96,
+                                          height: 96,
+                                          fit: BoxFit.cover,
+                                          errorWidget: Container(
+                                            width: 96,
+                                            height: 96,
+                                            color: const Color(0xFFF1F5F9),
+                                            child: const Icon(Icons.person,
+                                                color: Color(0xFF94A3B8)),
+                                          ),
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        martyr.title,
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                          color: Color(0xFF0D9488),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 4),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                martyr.name,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: Color(0xFF1E293B),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                martyr.title,
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: Color(0xFF0D9488),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                martyr.bio,
+                                                style: const TextStyle(
+                                                  fontSize: 9,
+                                                  color: Color(0xFF94A3B8),
+                                                  height: 1.4,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        martyr.bio,
-                                        style: const TextStyle(
-                                          fontSize: 9,
-                                          color: Color(0xFF94A3B8),
-                                          height: 1.4,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )).toList(),
+                            ))
+                        .toList(),
                   )
                 : const Center(
                     child: Padding(
@@ -374,7 +374,8 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildStancesCrimesList() {
     final list = currentView == ViewType.crimes ? crimes : stances;
-    final title = currentView == ViewType.crimes ? 'جرائم العدوان' : 'المواقف الخالدة';
+    final title =
+        currentView == ViewType.crimes ? 'جرائم العدوان' : 'المواقف الخالدة';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -386,7 +387,8 @@ class _MainScreenState extends State<MainScreen> {
             Container(
               padding: const EdgeInsets.only(right: 12),
               decoration: const BoxDecoration(
-                border: Border(right: BorderSide(color: Color(0xFF14B8A6), width: 4)),
+                border: Border(
+                    right: BorderSide(color: Color(0xFF14B8A6), width: 4)),
               ),
               child: Text(
                 title,
@@ -400,71 +402,77 @@ class _MainScreenState extends State<MainScreen> {
             const SizedBox(height: 24),
             list.isNotEmpty
                 ? Column(
-                    children: list.map((item) => Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: ImageHelper.buildImage(
-                              item.imageUrl,
-                              width: 96,
-                              height: 96,
-                              fit: BoxFit.cover,
-                              errorWidget: Container(
-                                width: 96,
-                                height: 96,
-                                color: const Color(0xFFF1F5F9),
-                                child: const Icon(Icons.image, color: Color(0xFF94A3B8)),
+                    children: list
+                        .map((item) => Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                                border:
+                                    Border.all(color: const Color(0xFFE2E8F0)),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Row(
                                 children: [
-                                  Text(
-                                    item.title,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFF1E293B),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: ImageHelper.buildImage(
+                                      item.imageUrl,
+                                      width: 96,
+                                      height: 96,
+                                      fit: BoxFit.cover,
+                                      errorWidget: Container(
+                                        width: 96,
+                                        height: 96,
+                                        color: const Color(0xFFF1F5F9),
+                                        child: const Icon(Icons.image,
+                                            color: Color(0xFF94A3B8)),
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    item.subtitle,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Color(0xFF64748B),
-                                      height: 1.5,
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.title,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w900,
+                                              color: Color(0xFF1E293B),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            item.subtitle,
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: Color(0xFF64748B),
+                                              height: 1.5,
+                                            ),
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )).toList(),
+                            ))
+                        .toList(),
                   )
                 : const Center(
                     child: Padding(
@@ -491,6 +499,7 @@ class _MainScreenState extends State<MainScreen> {
       left: 0,
       right: 0,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           // FAB
           if (currentView != ViewType.management)
@@ -544,7 +553,8 @@ class _MainScreenState extends State<MainScreen> {
                 _buildNavItem(ViewType.profile, Icons.person, 'ملفي'),
                 _buildNavItem(ViewType.stances, Icons.groups, 'المواقف'),
                 _buildCenterNavItem(),
-                _buildNavItem(ViewType.crimes, Icons.local_fire_department, 'الجرائم'),
+                _buildNavItem(
+                    ViewType.crimes, Icons.local_fire_department, 'الجرائم'),
                 _buildNavItem(ViewType.martyrs, Icons.people, 'الشهداء'),
               ],
             ),
@@ -573,7 +583,9 @@ class _MainScreenState extends State<MainScreen> {
                   : null,
               child: Icon(
                 icon,
-                color: isActive ? const Color(0xFF0D9488) : const Color(0xFF94A3B8),
+                color: isActive
+                    ? const Color(0xFF0D9488)
+                    : const Color(0xFF94A3B8),
                 size: 20,
               ),
             ),
@@ -583,7 +595,9 @@ class _MainScreenState extends State<MainScreen> {
               style: TextStyle(
                 fontSize: 8,
                 fontWeight: FontWeight.w900,
-                color: isActive ? const Color(0xFF0D9488) : const Color(0xFF94A3B8),
+                color: isActive
+                    ? const Color(0xFF0D9488)
+                    : const Color(0xFF94A3B8),
               ),
             ),
           ],
@@ -593,34 +607,39 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildCenterNavItem() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: () => setState(() => currentView = ViewType.home),
-          child: Container(
-            width: 64,
-            height: 64,
-            margin: const EdgeInsets.only(top: -32),
-            decoration: BoxDecoration(
-              color: currentView == ViewType.home ? const Color(0xFF0D9488) : const Color(0xFF14B8A6),
-              borderRadius: BorderRadius.circular(32),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF5EEAD4).withOpacity(0.4),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.home,
-              color: Colors.white,
-              size: 32,
+    return Transform.translate(
+      offset: const Offset(0, -32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => currentView = ViewType.home),
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: currentView == ViewType.home
+                    ? const Color(0xFF0D9488)
+                    : const Color(0xFF14B8A6),
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF5EEAD4).withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.home,
+                color: Colors.white,
+                size: 32,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
+  

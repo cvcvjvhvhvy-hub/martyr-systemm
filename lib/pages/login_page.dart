@@ -13,7 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
-  final _usernameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -29,7 +29,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -37,7 +37,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
@@ -45,56 +45,79 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       parent: _animationController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _animationController.forward();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _usernameController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  bool _isValidPhoneNumber(String phone) {
+    final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
+
+    // E.164 format: + followed by 7–15 digits
+    return RegExp(r'^\+\d{7,15}$').hasMatch(cleanPhone);
+  }
+
+  String _formatPhoneNumber(String phone) {
+    String cleanPhone = phone.replaceAll(RegExp(r'[^\d]'), '');
+
+    // 🇹🇷 تركيا
+    if (cleanPhone.startsWith('05') && cleanPhone.length == 11) {
+      return '+90${cleanPhone.substring(1)}';
+    }
+
+    if (cleanPhone.startsWith('5') && cleanPhone.length == 10) {
+      return '+90$cleanPhone';
+    }
+
+    // لو المستخدم كتب + من البداية
+    if (phone.trim().startsWith('+')) {
+      final formatted = phone.replaceAll(RegExp(r'[^\d+]'), '');
+      if (_isValidPhoneNumber(formatted)) return formatted;
+    }
+
+    throw Exception('رقم الهاتف غير مدعوم، استخدم الصيغة الدولية');
   }
 
   Future<void> _handleLogin() async {
-    final username = _usernameController.text.trim();
+    final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
-    
-    if (username.isEmpty || password.isEmpty) {
-      _showErrorSnackBar('يرجى إدخال اسم المستخدم وكلمة المرور');
+
+    if (phone.isEmpty || password.isEmpty) {
+      _showErrorSnackBar('يرجى إدخال رقم الهاتف وكلمة المرور');
       return;
     }
 
     setState(() => _isLoading = true);
 
-    // Check if input is a valid email, otherwise convert username to email
-    final email = _isValidEmail(username) ? username : '$username@martyrsystem.com';
-    final success = await FirebaseService.signIn(email, password);
-    
-    if (success) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('is_logged_in', true);
-      await prefs.setString('username', username);
-      
-      setState(() => _isLoading = false);
-      widget.onLoginSuccess();
-    } else {
-      if (username == 'admin' && password == '123456') {
+    try {
+      final formattedPhone = _formatPhoneNumber(phone);
+
+      if (!_isValidPhoneNumber(formattedPhone)) {
+        throw Exception('رقم الهاتف غير صحيح');
+      }
+
+      final success = await FirebaseService.signIn(formattedPhone, password);
+
+      if (success) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('is_logged_in', true);
-        await prefs.setString('username', username);
-        
-        setState(() => _isLoading = false);
+        await prefs.setString('phone_number', formattedPhone);
+
         widget.onLoginSuccess();
       } else {
-        setState(() => _isLoading = false);
-        _showErrorSnackBar('اسم المستخدم أو كلمة المرور غير صحيحة');
+        _showErrorSnackBar('بيانات الدخول غير صحيحة');
       }
+    } catch (e) {
+      _showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -126,7 +149,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       body: SafeArea(
         child: SingleChildScrollView(
           child: SizedBox(
-            height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
+            height: MediaQuery.of(context).size.height -
+                MediaQuery.of(context).padding.top,
             child: Column(
               children: [
                 // Header Section
@@ -148,7 +172,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                                border: Border.all(
+                                    color: Colors.white.withOpacity(0.3),
+                                    width: 2),
                               ),
                               child: const Icon(
                                 Icons.security,
@@ -191,7 +217,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       width: double.infinity,
                       decoration: const BoxDecoration(
                         color: Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(32)),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(24),
@@ -217,15 +244,16 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                               ),
                             ),
                             const SizedBox(height: 24),
-                            
+
                             _buildTextField(
-                              controller: _usernameController,
-                              label: 'اسم المستخدم',
-                              icon: Icons.person_outline,
-                              hint: 'أدخل اسم المستخدم',
+                              controller: _phoneController,
+                              label: 'رقم الهاتف',
+                              icon: Icons.phone_outlined,
+                              hint: 'مثال: +90XXXXXXXXXX',
+                              keyboardType: TextInputType.phone,
                             ),
                             const SizedBox(height: 16),
-                            
+
                             _buildTextField(
                               controller: _passwordController,
                               label: 'كلمة المرور',
@@ -234,7 +262,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                               isPassword: true,
                             ),
                             const SizedBox(height: 24),
-                            
                             // Login Button
                             SizedBox(
                               width: double.infinity,
@@ -242,19 +269,23 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 onPressed: _isLoading ? null : _handleLogin,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF0D9488),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   elevation: 6,
-                                  shadowColor: const Color(0xFF0D9488).withOpacity(0.4),
+                                  shadowColor:
+                                      const Color(0xFF0D9488).withOpacity(0.4),
                                 ),
                                 child: _isLoading
                                     ? const SizedBox(
                                         height: 18,
                                         width: 18,
                                         child: CircularProgressIndicator(
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
                                           strokeWidth: 2,
                                         ),
                                       )
@@ -268,13 +299,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                       ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 12),
-                            
+
                             // Sign Up Link
                             Center(
                               child: TextButton(
-                                onPressed: () => setState(() => _showSignUp = true),
+                                onPressed: () =>
+                                    setState(() => _showSignUp = true),
                                 child: const Text(
                                   'ليس لديك حساب؟ إنشاء حساب جديد',
                                   style: TextStyle(
@@ -285,9 +317,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 8),
-                            
+
                             // Demo Credentials
                             Container(
                               width: double.infinity,
@@ -295,7 +327,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF0FDFA),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFF5EEAD4).withOpacity(0.3)),
+                                border: Border.all(
+                                    color: const Color(0xFF5EEAD4)
+                                        .withOpacity(0.3)),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,15 +353,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                     ],
                                   ),
                                   const SizedBox(height: 6),
-                                  Text(
-                                    'اسم المستخدم: admin\nكلمة المرور: 123456\nأو أنشئ حساب Firebase جديد',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: const Color(0xFF0F766E).withOpacity(0.8),
-                                      fontWeight: FontWeight.w500,
-                                      height: 1.3,
-                                    ),
-                                  ),
+                                 
                                 ],
                               ),
                             ),
@@ -351,6 +377,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     required IconData icon,
     required String hint,
     bool isPassword = false,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,6 +394,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         TextFormField(
           controller: controller,
           obscureText: isPassword ? _obscurePassword : false,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
@@ -381,11 +409,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             suffixIcon: isPassword
                 ? IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: const Color(0xFF6B7280),
                       size: 18,
                     ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   )
                 : null,
             filled: true,
@@ -402,7 +433,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFF0D9488), width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
           style: const TextStyle(
             fontSize: 12,
