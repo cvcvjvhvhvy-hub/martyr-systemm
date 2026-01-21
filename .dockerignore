@@ -1,0 +1,11 @@
+build
+.packages
+.dart_tool
+.idea
+.vscode
+.gradle
+**/local.properties
+**/android/local.properties
+**/ios/Flutter/Flutter.podspec
+**/ios/Pods
+**/build

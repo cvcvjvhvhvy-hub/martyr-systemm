@@ -267,7 +267,35 @@ class FirebaseService {
       }).toList();
     } catch (e) {
       debugPrint('فشل تحميل الشهداء: $e');
-      return [];
+      // Return sample demo data so the app is usable without a populated Firestore
+      return [
+        Martyr(
+          id: 'demo1',
+          name: 'محمد الأحمد',
+          title: 'شهيد الحماية',
+          birthDate: '1990-01-01',
+          martyrdomDate: '2022-05-15',
+          cause: 'قصف جوي',
+          rank: 'جندي',
+          job: 'مزارع',
+          battles: ['معركة الذاكرة'],
+          bio: 'قٌدِم كبطل فداء في سبيل الوطن.',
+          imageUrl: '',
+        ),
+        Martyr(
+          id: 'demo2',
+          name: 'سارة خالد',
+          title: 'صانعة السلام',
+          birthDate: '1995-06-12',
+          martyrdomDate: '2023-08-20',
+          cause: 'هجوم مسلح',
+          rank: 'مواطنة',
+          job: 'معلمة',
+          battles: ['واجب الحماية'],
+          bio: 'تُذكر بعطاءها في دعم المجتمع.',
+          imageUrl: '',
+        ),
+      ];
     }
   }
 
@@ -329,7 +357,10 @@ class FirebaseService {
       }).toList();
     } catch (e) {
       debugPrint('فشل تحميل المواقف: $e');
-      return [];
+      return [
+        Stance(id: 's_demo1', title: 'موقف التضحية', subtitle: 'موقف بطولي في دفاع الوطن', imageUrl: ''),
+        Stance(id: 's_demo2', title: 'موقف الإصرار', subtitle: 'قصة إصرار ومثابرة', imageUrl: ''),
+      ];
     }
   }
 
@@ -388,7 +419,9 @@ class FirebaseService {
       }).toList();
     } catch (e) {
       debugPrint('فشل تحميل الجرائم: $e');
-      return [];
+      return [
+        Stance(id: 'c_demo1', title: 'قصف مدني', subtitle: 'وصف لحدث استهدف المدنيين', imageUrl: ''),
+      ];
     }
   }
 
