@@ -51,7 +51,7 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  bool? isLoggedIn;
+  bool? isLoggedIn =true;
 
   @override
   void initState() {
@@ -68,7 +68,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   void _onLoginSuccess() {
     setState(() {
-      isLoggedIn = true;
+      isLoggedIn = false;
     });
   }
 
@@ -76,7 +76,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_logged_in', false);
     setState(() {
-      isLoggedIn = false;
+      isLoggedIn = true;
     });
   }
 
@@ -91,9 +91,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       );
     }
 
-    return isLoggedIn!
-        ? MainScreen(onLogout: _onLogout)
-        : LoginPage(onLoginSuccess: _onLoginSuccess);
+    return MainScreen(onLogout: _onLogout);
   }
 }
 
@@ -238,7 +236,7 @@ class _MainScreenState extends State<MainScreen> {
       case ViewType.stances:
       case ViewType.crimes:
         return _buildStancesCrimesList();
-      }
+    }
   }
 
   Widget _buildMartyrsList() {
@@ -642,4 +640,3 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
-  
