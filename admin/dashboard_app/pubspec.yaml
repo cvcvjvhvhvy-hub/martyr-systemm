@@ -1,5 +1,5 @@
 name: admin_dashboard_app
-description: A standalone Flutter admin dashboard (mock) for the main app.
+description: A standalone Flutter admin dashboard for the main app.
 publish_to: none
 version: 0.0.1
 environment:
@@ -14,6 +14,9 @@ dependencies:
     sdk: flutter
   file_picker: ^5.2.5
   path: ^1.8.3
+  firebase_core: ^2.10.0
+  cloud_firestore: ^4.5.0
+  firebase_auth: ^4.4.0
 
 dev_dependencies:
   flutter_test:

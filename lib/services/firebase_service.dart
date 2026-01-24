@@ -10,240 +10,68 @@ class FirebaseService {
   static final FirebaseStorage _storage = FirebaseStorage.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // متغيرات لحفظ بيانات التحقق
-  static String? _verificationId;
-  static int? _resendToken;
-  static String? _pendingName;
-  static String? _pendingPassword;
-  static String? _pendingPhoneNumber;
-
-  // ========== Phone Authentication ==========
-
-  /// إرسال OTP للتسجيل
-  static Future<bool> signUp(
-    String phoneNumber,
-    String name,
-    String password, {
-    required Function(PhoneAuthCredential) onVerificationCompleted,
-    required Function(FirebaseAuthException) onVerificationFailed,
-    required Function(String, int?) onCodeSent,
-    required Function(String) onCodeAutoRetrievalTimeout,
-  }) async {
+  // Authentication
+  static Future<bool> signIn(String email, String password) async {
     try {
-      // حفظ البيانات مؤقتاً
-      _pendingName = name;
-      _pendingPassword = password;
-      _pendingPhoneNumber = phoneNumber;
-
-      debugPrint('🔵 إرسال OTP إلى: $phoneNumber');
-
-      await FirebaseAuth.instance.verifyPhoneNumber(
-        phoneNumber: phoneNumber,
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          await FirebaseAuth.instance.signInWithCredential(credential);
-        },
-        verificationFailed: (FirebaseAuthException e) {
-          debugPrint('❌ فشل التحقق: ${e.code} - ${e.message}');
-
-          if (e.code == 'invalid-phone-number') {
-            debugPrint('رقم الهاتف غير صحيح');
-          } else if (e.code == 'too-many-requests') {
-            debugPrint('تم تجاوز عدد المحاولات');
-          }
-          onVerificationFailed(e);
-        },
-        codeSent: (String verificationId, int? resendToken) {
-          debugPrint('✅ تم إرسال الكود بنجاح');
-          debugPrint('Verification ID: $verificationId');
-
-          _verificationId = verificationId;
-          _resendToken = resendToken;
-
-          onCodeSent(verificationId, resendToken);
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {
-          debugPrint('⏰ انتهى وقت القراءة التلقائية');
-          _verificationId = verificationId;
-
-          onCodeAutoRetrievalTimeout(verificationId);
-        },
-      );
-
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
       return true;
     } catch (e) {
-      debugPrint('❌ خطأ في signUp: $e');
+      debugPrint('خطأ في تسجيل الدخول: $e');
       return false;
     }
   }
 
-  /// التحقق من OTP
-  static Future<bool> verifyOtp(String otp) async {
+  static Future<bool> signUp(String email, String password, String name) async {
     try {
-      if (_verificationId == null) {
-        debugPrint('❌ لا يوجد verification ID');
-        return false;
-      }
-
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId!,
-        smsCode: otp,
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
-
-      await FirebaseAuth.instance.signInWithCredential(credential);
-
-      debugPrint('✅ تم التحقق من OTP بنجاح');
+      
+      await credential.user?.updateDisplayName(name);
+      
+      // Add user to users collection for admin dashboard
+      await _firestore.collection('users').doc(credential.user!.uid).set({
+        'id': credential.user!.uid,
+        'name': name,
+        'email': email,
+        'createdAt': FieldValue.serverTimestamp(),
+        'isActive': true,
+        'role': 'user',
+      });
+      
       return true;
     } catch (e) {
-      debugPrint('❌ فشل التحقق من OTP: $e');
+      debugPrint('خطأ في إنشاء الحساب: $e');
       return false;
     }
   }
 
-  /// إكمال عملية التسجيل بعد التحقق
-  static Future<bool> _completeSignUp(
-    PhoneAuthCredential credential,
-    String name,
-    String password,
-    String phoneNumber,
-  ) async {
-    try {
-      // تسجيل الدخول بالـ credential
-      UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
-
-      if (userCredential.user != null) {
-        debugPrint('✅ تم تسجيل الدخول بنجاح');
-
-        // حفظ بيانات المستخدم في Firestore
-        await _firestore.collection('users').doc(userCredential.user!.uid).set({
-          'name': name,
-          'phoneNumber': phoneNumber,
-          'password': password, // ملاحظة: من الأفضل تشفير كلمة المرور
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-        // تحديث اسم المستخدم
-        await userCredential.user!.updateDisplayName(name);
-
-        debugPrint('✅ تم حفظ بيانات المستخدم في Firestore');
-
-        // مسح البيانات المؤقتة
-        _clearPendingData();
-
-        return true;
-      }
-
-      return false;
-    } catch (e) {
-      debugPrint('❌ خطأ في _completeSignUp: $e');
-      return false;
-    }
-  }
-
-  /// إعادة إرسال OTP
-  static Future<bool> resendOtp({
-    required Function(PhoneAuthCredential) onVerificationCompleted,
-    required Function(FirebaseAuthException) onVerificationFailed,
-    required Function(String, int?) onCodeSent,
-    required Function(String) onCodeAutoRetrievalTimeout,
-  }) async {
-    try {
-      if (_pendingPhoneNumber == null) {
-        debugPrint('❌ لا يوجد رقم هاتف محفوظ');
-        return false;
-      }
-
-      debugPrint('🔵 إعادة إرسال OTP إلى: $_pendingPhoneNumber');
-
-      await _auth.verifyPhoneNumber(
-        phoneNumber: _pendingPhoneNumber!,
-        timeout: const Duration(seconds: 60),
-        forceResendingToken: _resendToken, // استخدام الـ token لإعادة الإرسال
-
-        verificationCompleted: onVerificationCompleted,
-        verificationFailed: onVerificationFailed,
-        codeSent: (String verificationId, int? resendToken) {
-          _verificationId = verificationId;
-          _resendToken = resendToken;
-          onCodeSent(verificationId, resendToken);
-        },
-        codeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
-      );
-
-      return true;
-    } catch (e) {
-      debugPrint('❌ خطأ في إعادة الإرسال: $e');
-      return false;
-    }
-  }
-
-  /// تسجيل الدخول
-  static Future<bool> signIn(String phoneNumber, String password) async {
-    try {
-      debugPrint('🔵 محاولة تسجيل الدخول: $phoneNumber');
-
-      // البحث عن المستخدم في Firestore
-      final querySnapshot = await _firestore
-          .collection('users')
-          .where('phoneNumber', isEqualTo: phoneNumber)
-          .where('password', isEqualTo: password)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        debugPrint('✅ تم العثور على المستخدم');
-        return true;
-      } else {
-        debugPrint('❌ رقم الهاتف أو كلمة المرور غير صحيحة');
-        return false;
-      }
-    } catch (e) {
-      debugPrint('❌ خطأ في تسجيل الدخول: $e');
-      return false;
-    }
-  }
-
-  /// تسجيل الخروج
   static Future<void> signOut() async {
     await _auth.signOut();
-    _clearPendingData();
   }
 
-  /// الحصول على المستخدم الحالي
   static User? getCurrentUser() {
     return _auth.currentUser;
   }
 
-  /// مسح البيانات المؤقتة
-  static void _clearPendingData() {
-    _verificationId = null;
-    _resendToken = null;
-    _pendingName = null;
-    _pendingPassword = null;
-    _pendingPhoneNumber = null;
-  }
-
-  // ========== Image Upload ==========
-
+  // Upload Image
   static Future<String> uploadImage(String base64Image, String path) async {
     try {
       if (!base64Image.startsWith('data:image')) {
         return base64Image;
       }
-
-      final base64String =
-          base64Image.contains(',') ? base64Image.split(',').last : base64Image;
+      
+      final base64String = base64Image.contains(',') ? base64Image.split(',').last : base64Image;
       final bytes = base64Decode(base64String);
-
+      
       if (bytes.isEmpty) {
         throw Exception('صورة فارغة');
       }
-
-      final ref = _storage
-          .ref()
-          .child('images/$path/${DateTime.now().millisecondsSinceEpoch}.jpg');
-      final uploadTask =
-          ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-
+      
+      final ref = _storage.ref().child('images/$path/${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final uploadTask = ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+      
       final snapshot = await uploadTask;
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
@@ -252,14 +80,10 @@ class FirebaseService {
     }
   }
 
-  // ========== Martyrs ==========
-
+  // Martyrs
   static Future<List<Martyr>> getMartyrs() async {
     try {
-      final snapshot = await _firestore
-          .collection('martyrs')
-          .orderBy('id', descending: true)
-          .get();
+      final snapshot = await _firestore.collection('martyrs').orderBy('createdAt', descending: true).get();
       return snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
@@ -267,35 +91,7 @@ class FirebaseService {
       }).toList();
     } catch (e) {
       debugPrint('فشل تحميل الشهداء: $e');
-      // Return sample demo data so the app is usable without a populated Firestore
-      return [
-        Martyr(
-          id: 'demo1',
-          name: 'محمد الأحمد',
-          title: 'شهيد الحماية',
-          birthDate: '1990-01-01',
-          martyrdomDate: '2022-05-15',
-          cause: 'قصف جوي',
-          rank: 'جندي',
-          job: 'مزارع',
-          battles: ['معركة الذاكرة'],
-          bio: 'قٌدِم كبطل فداء في سبيل الوطن.',
-          imageUrl: '',
-        ),
-        Martyr(
-          id: 'demo2',
-          name: 'سارة خالد',
-          title: 'صانعة السلام',
-          birthDate: '1995-06-12',
-          martyrdomDate: '2023-08-20',
-          cause: 'هجوم مسلح',
-          rank: 'مواطنة',
-          job: 'معلمة',
-          battles: ['واجب الحماية'],
-          bio: 'تُذكر بعطاءها في دعم المجتمع.',
-          imageUrl: '',
-        ),
-      ];
+      return [];
     }
   }
 
@@ -305,12 +101,17 @@ class FirebaseService {
       if (martyr.imageUrl.startsWith('data:image')) {
         imageUrl = await uploadImage(martyr.imageUrl, 'martyrs');
       }
-
+      
       final martyrData = martyr.toMap();
       martyrData['imageUrl'] = imageUrl;
       martyrData['createdAt'] = FieldValue.serverTimestamp();
-
+      martyrData['createdBy'] = getCurrentUser()?.uid ?? 'system';
+      
       await _firestore.collection('martyrs').doc(martyr.id).set(martyrData);
+      
+      // Log for admin dashboard
+      await _logActivity('add_martyr', 'تم إضافة شهيد جديد: ${martyr.name}');
+      
       debugPrint('تم إضافة الشهيد بنجاح: ${martyr.name}');
     } catch (e) {
       debugPrint('فشل في إضافة الشهيد: $e');
@@ -324,32 +125,39 @@ class FirebaseService {
       if (martyr.imageUrl.startsWith('data:image')) {
         imageUrl = await uploadImage(martyr.imageUrl, 'martyrs');
       }
-
+      
       final martyrData = martyr.toMap();
       martyrData['imageUrl'] = imageUrl;
-
+      martyrData['updatedAt'] = FieldValue.serverTimestamp();
+      martyrData['updatedBy'] = getCurrentUser()?.uid ?? 'system';
+      
       await _firestore.collection('martyrs').doc(martyr.id).update(martyrData);
+      
+      await _logActivity('update_martyr', 'تم تحديث الشهيد: ${martyr.name}');
     } catch (e) {
-      throw Exception('فشل في تحديث الشهيد');
+      debugPrint('فشل في تحديث الشهيد: $e');
+      throw Exception('فشل في تحديث الشهيد: ${e.toString()}');
     }
   }
 
   static Future<void> deleteMartyr(String id) async {
     try {
+      final doc = await _firestore.collection('martyrs').doc(id).get();
+      final name = doc.data()?['name'] ?? 'غير معروف';
+      
       await _firestore.collection('martyrs').doc(id).delete();
+      
+      await _logActivity('delete_martyr', 'تم حذف الشهيد: $name');
     } catch (e) {
-      throw Exception('فشل في حذف الشهيد');
+      debugPrint('فشل في حذف الشهيد: $e');
+      throw Exception('فشل في حذف الشهيد: ${e.toString()}');
     }
   }
 
-  // ========== Stances ==========
-
+  // Stances
   static Future<List<Stance>> getStances() async {
     try {
-      final snapshot = await _firestore
-          .collection('stances')
-          .orderBy('id', descending: true)
-          .get();
+      final snapshot = await _firestore.collection('stances').orderBy('createdAt', descending: true).get();
       return snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
@@ -357,10 +165,7 @@ class FirebaseService {
       }).toList();
     } catch (e) {
       debugPrint('فشل تحميل المواقف: $e');
-      return [
-        Stance(id: 's_demo1', title: 'موقف التضحية', subtitle: 'موقف بطولي في دفاع الوطن', imageUrl: ''),
-        Stance(id: 's_demo2', title: 'موقف الإصرار', subtitle: 'قصة إصرار ومثابرة', imageUrl: ''),
-      ];
+      return [];
     }
   }
 
@@ -370,13 +175,18 @@ class FirebaseService {
       if (stance.imageUrl.startsWith('data:image')) {
         imageUrl = await uploadImage(stance.imageUrl, 'stances');
       }
-
+      
       final stanceData = stance.toMap();
       stanceData['imageUrl'] = imageUrl;
-
+      stanceData['createdAt'] = FieldValue.serverTimestamp();
+      stanceData['createdBy'] = getCurrentUser()?.uid ?? 'system';
+      
       await _firestore.collection('stances').doc(stance.id).set(stanceData);
+      
+      await _logActivity('add_stance', 'تم إضافة موقف جديد: ${stance.title}');
     } catch (e) {
-      throw Exception('فشل في إضافة الموقف');
+      debugPrint('فشل في إضافة الموقف: $e');
+      throw Exception('فشل في إضافة الموقف: ${e.toString()}');
     }
   }
 
@@ -386,32 +196,39 @@ class FirebaseService {
       if (stance.imageUrl.startsWith('data:image')) {
         imageUrl = await uploadImage(stance.imageUrl, 'stances');
       }
-
+      
       final stanceData = stance.toMap();
       stanceData['imageUrl'] = imageUrl;
-
+      stanceData['updatedAt'] = FieldValue.serverTimestamp();
+      stanceData['updatedBy'] = getCurrentUser()?.uid ?? 'system';
+      
       await _firestore.collection('stances').doc(stance.id).update(stanceData);
+      
+      await _logActivity('update_stance', 'تم تحديث الموقف: ${stance.title}');
     } catch (e) {
-      throw Exception('فشل في تحديث الموقف');
+      debugPrint('فشل في تحديث الموقف: $e');
+      throw Exception('فشل في تحديث الموقف: ${e.toString()}');
     }
   }
 
   static Future<void> deleteStance(String id) async {
     try {
+      final doc = await _firestore.collection('stances').doc(id).get();
+      final title = doc.data()?['title'] ?? 'غير معروف';
+      
       await _firestore.collection('stances').doc(id).delete();
+      
+      await _logActivity('delete_stance', 'تم حذف الموقف: $title');
     } catch (e) {
-      throw Exception('فشل في حذف الموقف');
+      debugPrint('فشل في حذف الموقف: $e');
+      throw Exception('فشل في حذف الموقف: ${e.toString()}');
     }
   }
 
-  // ========== Crimes ==========
-
+  // Crimes
   static Future<List<Stance>> getCrimes() async {
     try {
-      final snapshot = await _firestore
-          .collection('crimes')
-          .orderBy('id', descending: true)
-          .get();
+      final snapshot = await _firestore.collection('crimes').orderBy('createdAt', descending: true).get();
       return snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
@@ -419,9 +236,7 @@ class FirebaseService {
       }).toList();
     } catch (e) {
       debugPrint('فشل تحميل الجرائم: $e');
-      return [
-        Stance(id: 'c_demo1', title: 'قصف مدني', subtitle: 'وصف لحدث استهدف المدنيين', imageUrl: ''),
-      ];
+      return [];
     }
   }
 
@@ -431,13 +246,18 @@ class FirebaseService {
       if (crime.imageUrl.startsWith('data:image')) {
         imageUrl = await uploadImage(crime.imageUrl, 'crimes');
       }
-
+      
       final crimeData = crime.toMap();
       crimeData['imageUrl'] = imageUrl;
-
+      crimeData['createdAt'] = FieldValue.serverTimestamp();
+      crimeData['createdBy'] = getCurrentUser()?.uid ?? 'system';
+      
       await _firestore.collection('crimes').doc(crime.id).set(crimeData);
+      
+      await _logActivity('add_crime', 'تم إضافة جريمة جديدة: ${crime.title}');
     } catch (e) {
-      throw Exception('فشل في إضافة الجريمة');
+      debugPrint('فشل في إضافة الجريمة: $e');
+      throw Exception('فشل في إضافة الجريمة: ${e.toString()}');
     }
   }
 
@@ -447,21 +267,122 @@ class FirebaseService {
       if (crime.imageUrl.startsWith('data:image')) {
         imageUrl = await uploadImage(crime.imageUrl, 'crimes');
       }
-
+      
       final crimeData = crime.toMap();
       crimeData['imageUrl'] = imageUrl;
-
+      crimeData['updatedAt'] = FieldValue.serverTimestamp();
+      crimeData['updatedBy'] = getCurrentUser()?.uid ?? 'system';
+      
       await _firestore.collection('crimes').doc(crime.id).update(crimeData);
+      
+      await _logActivity('update_crime', 'تم تحديث الجريمة: ${crime.title}');
     } catch (e) {
-      throw Exception('فشل في تحديث الجريمة');
+      debugPrint('فشل في تحديث الجريمة: $e');
+      throw Exception('فشل في تحديث الجريمة: ${e.toString()}');
     }
   }
 
   static Future<void> deleteCrime(String id) async {
     try {
+      final doc = await _firestore.collection('crimes').doc(id).get();
+      final title = doc.data()?['title'] ?? 'غير معروف';
+      
       await _firestore.collection('crimes').doc(id).delete();
+      
+      await _logActivity('delete_crime', 'تم حذف الجريمة: $title');
     } catch (e) {
-      throw Exception('فشل في حذف الجريمة');
+      debugPrint('فشل في حذف الجريمة: $e');
+      throw Exception('فشل في حذف الجريمة: ${e.toString()}');
+    }
+  }
+
+  // Admin Dashboard Functions
+  static Future<Map<String, dynamic>> getDashboardStats() async {
+    try {
+      final martyrsCount = await _firestore.collection('martyrs').count().get();
+      final stancesCount = await _firestore.collection('stances').count().get();
+      final crimesCount = await _firestore.collection('crimes').count().get();
+      final usersCount = await _firestore.collection('users').count().get();
+      
+      return {
+        'martyrs': martyrsCount.count,
+        'stances': stancesCount.count,
+        'crimes': crimesCount.count,
+        'users': usersCount.count,
+      };
+    } catch (e) {
+      debugPrint('فشل في تحميل إحصائيات لوحة التحكم: $e');
+      return {
+        'martyrs': 0,
+        'stances': 0,
+        'crimes': 0,
+        'users': 0,
+      };
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getUsers() async {
+    try {
+      final snapshot = await _firestore.collection('users').orderBy('createdAt', descending: true).get();
+      return snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList();
+    } catch (e) {
+      debugPrint('فشل في تحميل المستخدمين: $e');
+      return [];
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getActivityLogs() async {
+    try {
+      final snapshot = await _firestore.collection('activity_logs')
+          .orderBy('timestamp', descending: true)
+          .limit(100)
+          .get();
+      return snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList();
+    } catch (e) {
+      debugPrint('فشل في تحميل سجل الأنشطة: $e');
+      return [];
+    }
+  }
+
+  static Future<void> _logActivity(String action, String description) async {
+    try {
+      await _firestore.collection('activity_logs').add({
+        'action': action,
+        'description': description,
+        'userId': getCurrentUser()?.uid ?? 'system',
+        'userEmail': getCurrentUser()?.email ?? 'system',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('فشل في تسجيل النشاط: $e');
+    }
+  }
+
+  static Future<void> sendNotification(String title, String message, String type) async {
+    try {
+      await _firestore.collection('notifications').add({
+        'title': title,
+        'message': message,
+        'type': type,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'createdBy': getCurrentUser()?.uid ?? 'system',
+      });
+    } catch (e) {
+      debugPrint('فشل في إرسال الإشعار: $e');
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getNotifications() async {
+    try {
+      final snapshot = await _firestore.collection('notifications')
+          .orderBy('createdAt', descending: true)
+          .limit(50)
+          .get();
+      return snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList();
+    } catch (e) {
+      debugPrint('فشل في تحميل الإشعارات: $e');
+      return [];
     }
   }
 }
