@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "123456789012",
-    "project_id": "martyr-system-app",
-    "storage_bucket": "martyr-system-app.appspot.com"
+    "project_number": "526735087378",
+    "project_id": "martyres-6c9ed",
+    "storage_bucket": "martyres-6c9ed.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789012:android:abcdef123456789",
+        "mobilesdk_app_id": "1:526735087378:android:81a19d6250ecb9a55105cb",
         "android_client_info": {
           "package_name": "com.example.martyr_system"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyABCDEFGHIJKLMNOPQRSTUVWXYZ1234567"
+          "current_key": "AIzaSyABLKhvY9LBIx8mr5lsnXk56Mf5tKdhtBY"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

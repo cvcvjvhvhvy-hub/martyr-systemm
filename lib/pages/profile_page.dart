@@ -7,7 +7,7 @@ import '../widgets/image_helper.dart';
 
 class ProfilePage extends StatefulWidget {
   final VoidCallback onLogout;
-  
+
   const ProfilePage({Key? key, required this.onLogout}) : super(key: key);
 
   @override
@@ -30,7 +30,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       userName = prefs.getString('user_name') ?? 'المستخدم العزيز';
-      userBio = prefs.getString('user_bio') ?? 'مرحباً بك في تطبيق ذاكرة الوفاء، هنا نخلد ذكرى الأبطال.';
+      userBio = prefs.getString('user_bio') ??
+          'مرحباً بك في تطبيق ذاكرة الوفاء، هنا نخلد ذكرى الأبطال.';
       profileImage = prefs.getString('user_image');
     });
   }
@@ -47,13 +48,14 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _handleImagePicker() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    
+
     if (image != null) {
       final bytes = await image.readAsBytes();
       final base64String = base64Encode(bytes);
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_image', 'data:image/jpeg;base64,$base64String');
-      
+      await prefs.setString(
+          'user_image', 'data:image/jpeg;base64,$base64String');
+
       setState(() {
         profileImage = 'data:image/jpeg;base64,$base64String';
       });
@@ -73,7 +75,8 @@ class _ProfilePageState extends State<ProfilePage> {
               width: double.infinity,
               decoration: const BoxDecoration(
                 color: Color(0xFF0D9488),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(48)),
+                borderRadius:
+                    BorderRadius.vertical(bottom: Radius.circular(48)),
               ),
               child: Stack(
                 children: [
@@ -162,7 +165,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ],
                         ),
                       );
-                      
+
                       if (confirmed == true) {
                         await FirebaseService.signOut();
                         widget.onLogout();

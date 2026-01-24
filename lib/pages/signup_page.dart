@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:martyr_system/pages/otp_page.dart';
 import '../services/firebase_service.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -6,46 +8,90 @@ class SignUpPage extends StatefulWidget {
   final VoidCallback onBackToLogin;
 
   const SignUpPage({
-    Key? key,
+    super.key,
     required this.onSignUpSuccess,
     required this.onBackToLogin,
-  }) : super(key: key);
+  });
 
   @override
   State<SignUpPage> createState() => _SignUpPageState();
 }
 
-class _SignUpPageState extends State<SignUpPage> {
+class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _animationController.forward();
+  }
 
   @override
   void dispose() {
+    _animationController.dispose();
     _nameController.dispose();
-    _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _phoneController.dispose();
     super.dispose();
+  }
+
+  bool _isValidPhoneNumber(String phone) {
+    String cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
+    if (cleanPhone.startsWith('+')) {
+      return RegExp(r'^\+\d{7,15}$').hasMatch(cleanPhone);
+    } else {
+      return RegExp(r'^\d{7,15}$').hasMatch(cleanPhone);
+    }
+  }
+
+  String _formatPhoneNumber(String phone) {
+    String cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
+    if (cleanPhone.startsWith('+')) {
+      return cleanPhone;
+    }
+    return '+$cleanPhone';
   }
 
   Future<void> _handleSignUp() async {
     final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty || phone.isEmpty || password.isEmpty) {
       _showErrorSnackBar('يرجى ملء جميع الحقول');
       return;
     }
 
-    if (password != confirmPassword) {
-      _showErrorSnackBar('كلمة المرور غير متطابقة');
+    if (!_isValidPhoneNumber(phone)) {
+      _showErrorSnackBar('يرجى إدخال رقم هاتف صحيح (مع رمز الدولة مثال: +90XXXXXXXXXX)');
       return;
     }
 
@@ -56,14 +102,85 @@ class _SignUpPageState extends State<SignUpPage> {
 
     setState(() => _isLoading = true);
 
-    final success = await FirebaseService.signUp(email, password, name);
-    
-    if (success) {
+    try {
+      final formattedPhone = _formatPhoneNumber(phone);
+
+      debugPrint('🔵 بدء عملية التسجيل...');
+      debugPrint('👤 الاسم: $name');
+      debugPrint('📱 الهاتف: $formattedPhone');
+
+      final success = await FirebaseService.signUp(
+        formattedPhone,
+        name,
+        password,
+        
+        // Callback 1: التحقق التلقائي (Android فقط)
+        onVerificationCompleted: (PhoneAuthCredential credential) async {
+          debugPrint('✅ التحقق التلقائي اكتمل!');
+          setState(() => _isLoading = false);
+          _showSuccessSnackBar('تم التحقق تلقائياً!');
+          
+          // الانتقال للصفحة الرئيسية مباشرة
+          await Future.delayed(const Duration(milliseconds: 500));
+          widget.onSignUpSuccess();
+        },
+        
+        // Callback 2: فشل التحقق
+        onVerificationFailed: (FirebaseAuthException e) {
+          setState(() => _isLoading = false);
+          
+          String errorMessage = 'حدث خطأ في التحقق';
+          
+          if (e.code == 'invalid-phone-number') {
+            errorMessage = 'رقم الهاتف غير صحيح';
+          } else if (e.code == 'too-many-requests') {
+            errorMessage = 'تم تجاوز عدد المحاولات، يرجى المحاولة لاحقاً';
+          } else if (e.code == 'network-request-failed') {
+            errorMessage = 'تحقق من اتصال الإنترنت';
+          }
+          
+          _showErrorSnackBar(errorMessage);
+        },
+        
+        // Callback 3: تم إرسال الكود ⭐
+        onCodeSent: (String verificationId, int? resendToken) {
+          setState(() => _isLoading = false);
+          
+          debugPrint('✅ تم إرسال الكود، الانتقال لصفحة التحقق');
+          
+          // الانتقال لصفحة OTP
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => OtpPage(
+                  phoneNumber: formattedPhone,
+                  name: name,
+                  password: password,
+                  onVerifySuccess: widget.onSignUpSuccess,
+                  onBack: () {
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            );
+          }
+        },
+        
+        // Callback 4: انتهى وقت القراءة التلقائية
+        onCodeAutoRetrievalTimeout: (String verificationId) {
+          debugPrint('⏰ انتهى وقت القراءة التلقائية');
+        },
+      );
+
+      if (!success) {
+        setState(() => _isLoading = false);
+        _showErrorSnackBar('فشل في إرسال رمز التحقق');
+      }
+    } catch (e) {
+      debugPrint('❌ خطأ في التسجيل: $e');
       setState(() => _isLoading = false);
-      widget.onSignUpSuccess();
-    } else {
-      setState(() => _isLoading = false);
-      _showErrorSnackBar('فشل في إنشاء الحساب، يرجى المحاولة مرة أخرى');
+      _showErrorSnackBar('حدث خطأ: ${e.toString()}');
     }
   }
 
@@ -72,6 +189,17 @@ class _SignUpPageState extends State<SignUpPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: const Color(0xFFDC2626),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF0D9488),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -91,45 +219,52 @@ class _SignUpPageState extends State<SignUpPage> {
                 // Header
                 Expanded(
                   flex: 1,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
-                          ),
-                          child: const Icon(
-                            Icons.person_add,
-                            size: 40,
-                            color: Colors.white,
-                          ),
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                              ),
+                              child: const Icon(
+                                Icons.person_add,
+                                size: 40,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'إنشاء حساب جديد',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'انضم إلى ذاكرة الوفاء',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withOpacity(0.8),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'إنشاء حساب جديد',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'انضم إلى ذاكرة الوفاء',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -137,112 +272,152 @@ class _SignUpPageState extends State<SignUpPage> {
                 // Form Section
                 Expanded(
                   flex: 2,
-                  child: Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 8),
-                          
-                          _buildTextField(
-                            controller: _nameController,
-                            label: 'الاسم الكامل',
-                            icon: Icons.person_outline,
-                            hint: 'أدخل اسمك الكامل',
-                          ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          _buildTextField(
-                            controller: _emailController,
-                            label: 'البريد الإلكتروني',
-                            icon: Icons.email_outlined,
-                            hint: 'أدخل بريدك الإلكتروني',
-                          ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          _buildTextField(
-                            controller: _passwordController,
-                            label: 'كلمة المرور',
-                            icon: Icons.lock_outline,
-                            hint: 'أدخل كلمة المرور',
-                            isPassword: true,
-                            obscureText: _obscurePassword,
-                            onToggleVisibility: () => setState(() => _obscurePassword = !_obscurePassword),
-                          ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          _buildTextField(
-                            controller: _confirmPasswordController,
-                            label: 'تأكيد كلمة المرور',
-                            icon: Icons.lock_outline,
-                            hint: 'أعد إدخال كلمة المرور',
-                            isPassword: true,
-                            obscureText: _obscureConfirmPassword,
-                            onToggleVisibility: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          
-                          // Sign Up Button
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _handleSignUp,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0D9488),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 8),
+
+                            _buildTextField(
+                              controller: _nameController,
+                              label: 'الاسم الكامل',
+                              icon: Icons.person_outline,
+                              hint: 'أدخل اسمك الكامل',
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            _buildTextField(
+                              controller: _phoneController,
+                              label: 'رقم الهاتف',
+                              icon: Icons.phone_outlined,
+                              hint: 'مثال: +90XXXXXXXXXX أو +1XXXXXXXXXX',
+                              keyboardType: TextInputType.phone,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            _buildTextField(
+                              controller: _passwordController,
+                              label: 'كلمة المرور',
+                              icon: Icons.lock_outline,
+                              hint: 'أدخل كلمة المرور (6 أحرف على الأقل)',
+                              isPassword: true,
+                              obscureText: _obscurePassword,
+                              onToggleVisibility: () {
+                                setState(() => _obscurePassword = !_obscurePassword);
+                              },
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Sign Up Button
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _handleSignUp,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF0D9488),
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  elevation: 6,
+                                  shadowColor: const Color(0xFF0D9488).withOpacity(0.4),
                                 ),
-                                elevation: 6,
-                                shadowColor: const Color(0xFF0D9488).withOpacity(0.4),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 18,
+                                        width: 18,
+                                        child: CircularProgressIndicator(
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'إنشاء الحساب',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                               ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                        strokeWidth: 2,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Back to Login
+                            Center(
+                              child: TextButton(
+                                onPressed: widget.onBackToLogin,
+                                child: const Text(
+                                  'لديك حساب بالفعل؟ تسجيل الدخول',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0D9488),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 8),
+
+                            // Info Box
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0FDFA),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFF5EEAD4).withOpacity(0.3)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        color: const Color(0xFF0D9488),
+                                        size: 14,
                                       ),
-                                    )
-                                  : const Text(
-                                      'إنشاء الحساب',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
+                                      const SizedBox(width: 6),
+                                      const Text(
+                                        'ملاحظة',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFF0D9488),
+                                        ),
                                       ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'سيتم إرسال رمز التحقق عبر SMS إلى رقم هاتفك',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: const Color(0xFF0F766E).withOpacity(0.8),
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.3,
                                     ),
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          // Back to Login
-                          Center(
-                            child: TextButton(
-                              onPressed: widget.onBackToLogin,
-                              child: const Text(
-                                'لديك حساب بالفعل؟ تسجيل الدخول',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF0D9488),
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -263,6 +438,7 @@ class _SignUpPageState extends State<SignUpPage> {
     bool isPassword = false,
     bool obscureText = false,
     VoidCallback? onToggleVisibility,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,6 +455,7 @@ class _SignUpPageState extends State<SignUpPage> {
         TextFormField(
           controller: controller,
           obscureText: obscureText,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(

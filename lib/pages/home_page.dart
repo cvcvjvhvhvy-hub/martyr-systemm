@@ -29,7 +29,8 @@ class HomePage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -44,7 +45,8 @@ class HomePage extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
+                    const Icon(Icons.search,
+                        color: Color(0xFF94A3B8), size: 20),
                     const Expanded(
                       child: Column(
                         children: [
@@ -104,7 +106,8 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0FDFA),
                           borderRadius: BorderRadius.circular(12),
@@ -142,7 +145,8 @@ class HomePage extends StatelessWidget {
                                 child: Stack(
                                   children: [
                                     ClipRRect(
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                                      borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(32)),
                                       child: ImageHelper.buildImage(
                                         featuredMartyr.imageUrl,
                                         width: double.infinity,
@@ -152,7 +156,9 @@ class HomePage extends StatelessWidget {
                                     ),
                                     Container(
                                       decoration: BoxDecoration(
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                                top: Radius.circular(32)),
                                         gradient: LinearGradient(
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
@@ -168,7 +174,8 @@ class HomePage extends StatelessWidget {
                                           padding: const EdgeInsets.all(24),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
                                             children: [
                                               Text(
                                                 featuredMartyr.name,
@@ -200,15 +207,18 @@ class HomePage extends StatelessWidget {
                                 child: SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton(
-                                    onPressed: () => onSelectMartyr(featuredMartyr),
+                                    onPressed: () =>
+                                        onSelectMartyr(featuredMartyr),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF0D9488),
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       elevation: 8,
-                                      shadowColor: const Color(0xFF0D9488).withOpacity(0.3),
+                                      shadowColor: const Color(0xFF0D9488)
+                                          .withOpacity(0.3),
                                     ),
                                     child: const Text(
                                       'قراءة السيرة العطرة',
@@ -276,7 +286,9 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildSection(String title, List<dynamic> items, Function(dynamic)? onSelect) {
+
+  Widget _buildSection<T>(
+      String title, List<dynamic> items, Function(T)? onSelect) {
     return Column(
       children: [
         Padding(
@@ -293,7 +305,8 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF0FDFA),
                   borderRadius: BorderRadius.circular(12),
@@ -353,7 +366,8 @@ class HomePage extends StatelessWidget {
                               child: Stack(
                                 children: [
                                   ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(24)),
                                     child: ImageHelper.buildImage(
                                       item.imageUrl,
                                       width: double.infinity,
@@ -363,7 +377,8 @@ class HomePage extends StatelessWidget {
                                   ),
                                   Container(
                                     decoration: BoxDecoration(
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                      borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(24)),
                                       gradient: LinearGradient(
                                         begin: Alignment.topCenter,
                                         end: Alignment.bottomCenter,
@@ -379,10 +394,13 @@ class HomePage extends StatelessWidget {
                                         padding: const EdgeInsets.all(12),
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
                                           children: [
                                             Text(
-                                              item is Martyr ? item.name : item.title,
+                                              item is Martyr
+                                                  ? item.name
+                                                  : item.title,
                                               style: const TextStyle(
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.w900,
@@ -393,7 +411,9 @@ class HomePage extends StatelessWidget {
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              item is Martyr ? item.title : item.subtitle,
+                                              item is Martyr
+                                                  ? item.title
+                                                  : item.subtitle,
                                               style: const TextStyle(
                                                 fontSize: 8,
                                                 fontWeight: FontWeight.w500,
