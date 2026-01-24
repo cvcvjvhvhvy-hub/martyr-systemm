@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import '../services/firebase_service.dart';
 import '../widgets/image_helper.dart';
@@ -144,7 +145,55 @@ class _ProfilePageState extends State<ProfilePage> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(40),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(
+                            Icons.admin_panel_settings,
+                            color: Color(0xFF00BFA5),
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        InkWell(
+                          onTap: () async {
+                            final Uri url =
+                                Uri.parse('');
+                            if (!await launchUrl(
+                              url,
+                              mode: LaunchMode.externalApplication,
+                            )) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('تعذر فتح لوحة الإدارة')),
+                              );
+                            }
+                          },
+                          child: const Text(
+                            'الذهاب إلى الإدارة',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF00BFA5),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 24),
                   // Logout Button
                   GestureDetector(
                     onTap: () async {
