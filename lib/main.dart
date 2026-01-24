@@ -1,19 +1,20 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:martyr_system/dashboard_app/lib/admindashboard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'models/models.dart';
+
 import 'pages/home_page.dart';
 import 'pages/details_page.dart';
 import 'pages/profile_page.dart';
-import 'pages/management_page.dart';
-import 'pages/login_page.dart';
 import 'services/firebase_service.dart';
 import 'widgets/image_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -23,7 +24,11 @@ void main() async {
     debugPrint('فشل تهيئة Firebase: $e');
   }
 
-  runApp(const MartyrSystemApp());
+  runApp(
+    kIsWeb
+        ? AdminDashboardApp() // ✅ لو Web
+        : const MartyrSystemApp(),  // ✅ لو Mobile
+  );
 }
 
 class MartyrSystemApp extends StatelessWidget {
@@ -66,11 +71,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
     });
   }
 
-  void _onLoginSuccess() {
-    setState(() {
-      isLoggedIn = false;
-    });
-  }
+  // void _onLoginSuccess() {
+  //   setState(() {
+  //     isLoggedIn = false;
+  //   });
+  // }
 
   Future<void> _onLogout() async {
     final prefs = await SharedPreferences.getInstance();
@@ -220,8 +225,8 @@ class _MainScreenState extends State<MainScreen> {
         );
       case ViewType.profile:
         return ProfilePage(onLogout: widget.onLogout);
-      case ViewType.management:
-        return ManagementPage(onDataChange: _loadData);
+      // case ViewType.management:
+      //   return ManagementPage(onDataChange: _loadData);
       case ViewType.details:
         return selectedMartyr != null
             ? DetailsPage(martyr: selectedMartyr!, onBack: _goBack)
@@ -236,6 +241,9 @@ class _MainScreenState extends State<MainScreen> {
       case ViewType.stances:
       case ViewType.crimes:
         return _buildStancesCrimesList();
+      case ViewType.management:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 
@@ -500,62 +508,47 @@ class _MainScreenState extends State<MainScreen> {
         clipBehavior: Clip.none,
         children: [
           // FAB
-          if (currentView != ViewType.management)
-            Positioned(
-              top: -96,
-              left: 24,
-              child: GestureDetector(
-                onTap: () => setState(() => currentView = ViewType.management),
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFA3781F),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                    border: Border.all(color: Colors.white, width: 4),
-                  ),
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-              ),
-            ),
+          // if (currentView != ViewType.management)
+            // Positioned(
+            //   top: -96,
+            //   left: 24,
+            //   child: GestureDetector(
+            //     onTap: () => setState(() => currentView = ViewType.management),
+            //     child: Container(
+            //       width: 56,
+            //       height: 56,
+            //       decoration: BoxDecoration(
+            //         color: const Color(0xFFA3781F),
+            //         borderRadius: BorderRadius.circular(16),
+            //         boxShadow: [
+            //           BoxShadow(
+            //             color: Colors.black.withOpacity(0.2),
+            //             blurRadius: 20,
+            //             offset: const Offset(0, 4),
+            //           ),
+            //         ],
+            //         border: Border.all(color: Colors.white, width: 4),
+            //       ),
+            //       child: const Icon(
+            //         Icons.add,
+            //         color: Colors.white,
+            //         size: 32,
+            //       ),
+            //     ),
+            //   ),
+            // ),
 
           // Bottom Navigation
-          Container(
-            height: 80,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-              border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x14000000),
-                  blurRadius: 40,
-                  offset: Offset(0, -15),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(ViewType.profile, Icons.person, 'ملفي'),
-                _buildNavItem(ViewType.stances, Icons.groups, 'المواقف'),
-                _buildCenterNavItem(),
-                _buildNavItem(
-                    ViewType.crimes, Icons.local_fire_department, 'الجرائم'),
-                _buildNavItem(ViewType.martyrs, Icons.people, 'الشهداء'),
-              ],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(ViewType.profile, Icons.person, 'ملفي'),
+              _buildNavItem(ViewType.stances, Icons.groups, 'المواقف'),
+              _buildCenterNavItem(),
+              _buildNavItem(
+                  ViewType.crimes, Icons.local_fire_department, 'الجرائم'),
+              _buildNavItem(ViewType.martyrs, Icons.people, 'الشهداء'),
+            ],
           ),
         ],
       ),

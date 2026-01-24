@@ -1,0 +1,52 @@
+<<<<<<< HEAD:admin/dashboard_app/pubspec.yaml
+name: admin_dashboard_app
+description: A standalone Flutter admin dashboard for the main app.
+publish_to: none
+version: 0.0.1
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  uuid: ^3.0.6
+  flutter_localizations:
+    sdk: flutter
+  file_picker: ^5.2.5
+  path: ^1.8.3
+  firebase_core: ^2.10.0
+  cloud_firestore: ^4.5.0
+  firebase_auth: ^4.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+=======
+name: admin_dashboard_app
+description: A standalone Flutter admin dashboard (mock) for the main app.
+publish_to: none
+version: 0.0.1
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  uuid: ^3.0.6
+  flutter_localizations:
+    sdk: flutter
+  file_picker: ^5.2.5
+  path: ^1.8.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+>>>>>>> 1747b46c75c337ab16f52f7a9f5df37e741d66b1:lib/dashboard_app/pubspec.yaml
