@@ -1,41 +1,72 @@
-# Admin Dashboard (Flutter)
+# لوحة التحكم الإدارية - نظام الشهداء
 
-This is a standalone Flutter admin dashboard (mock). It is not integrated with the main app — it's a separate Flutter project placed under `flutter_app/admin/dashboard_app` so you can connect it later.
+لوحة تحكم ويب مستقلة لإدارة نظام الشهداء مبنية بـ Flutter مع دعم كامل للغة العربية.
 
-Quick start:
+## 🚀 التشغيل السريع
 
 ```bash
-cd flutter_app/admin/dashboard_app
+cd admin/dashboard_app
 flutter pub get
-flutter run
+flutter run -d chrome
 ```
 
-Notes:
-- The data layer is a simple in-memory `MockService` (no backend).
-- Pages: Users, Content, Notifications.
-- Use Material design; localize/RTL as needed.
+## ✨ المميزات
 
-Build for web (recommended for easy deployment):
+- 📊 لوحة معلومات شاملة مع الإحصائيات
+- 👥 إدارة المستخدمين والصلاحيات
+- 📝 إدارة المحتوى (شهداء، مواقف، جرائم)
+- 🔔 نظام الإشعارات
+- 📋 سجل الأنشطة والتدقيق
+- 🌐 واجهة عربية متجاوبة
+- 🔥 متصلة مباشرة بـ Firebase
 
+## 🏗️ البناء للإنتاج
+
+### بناء تطبيق الويب
 ```bash
-cd flutter_app/admin/dashboard_app
+cd admin/dashboard_app
 flutter pub get
 flutter build web --release
-# The built files are in build/web
+# الملفات المبنية في build/web
 ```
 
-Run locally (serve the `build/web` folder) or build a Docker image as below.
-
-Docker build & run (serves production web build via nginx):
-
+### بناء Docker Image
 ```bash
-# from project root flutter_app/admin/dashboard_app
+# من مجلد admin/dashboard_app
 docker build -t admin-dashboard:latest .
 docker run -p 8080:80 admin-dashboard:latest
-# open http://localhost:8080
+# افتح http://localhost:8080
 ```
 
-Notes on Dockerfile:
-- Multi-stage: uses a Flutter SDK image to build web, then copies to `nginx:alpine` for serving.
-- If you're building on CI, ensure Docker has enough disk/CPU and network to fetch Flutter SDK.
+## 📱 الصفحات المتاحة
 
+1. **لوحة المعلومات** - إحصائيات شاملة
+2. **إدارة المستخدمين** - عرض وإدارة المستخدمين
+3. **إدارة المحتوى** - التحكم في الشهداء والمواقف
+4. **الشكاوى والدعم** - إدارة طلبات الدعم
+5. **الإشعارات** - إرسال وإدارة الإشعارات
+6. **حسابات الأدمن** - إدارة المديرين
+7. **الإعدادات التقنية** - إعدادات النظام
+8. **سجل التدقيق** - تتبع جميع الأنشطة
+
+## 🔧 التكوين
+
+### متطلبات Firebase
+- Authentication
+- Firestore Database
+- Storage
+
+### المتغيرات المطلوبة
+- Firebase Project ID
+- API Keys
+- Storage Bucket
+
+## 🐳 Docker
+
+الـ Dockerfile يستخدم multi-stage build:
+1. بناء التطبيق باستخدام Flutter SDK
+2. تشغيل النتيجة على nginx:alpine
+
+## 📄 الترخيص
+
+مرخص تحت رخصة MIT - جزء من نظام الشهداء.
